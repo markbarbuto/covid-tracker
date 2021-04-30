@@ -11,6 +11,8 @@ npm init
 
 npm install express
 npm install pg
+npm install body-parser
+npm install nodemon
 
 # check out the package.json now
 # check out node_modules

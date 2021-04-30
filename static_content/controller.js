@@ -1,5 +1,4 @@
 //Setup for global variables used in controller.js
-var stage=null;
 var view = null;
 var interval=null;
 
@@ -17,18 +16,9 @@ var registrationForm={
         "soda": ""
 };
 
-var difficulty = 0;
-var speed=15;
-var keysPressed = {
-                'a': 0,
-                's': 0,
-                'd': 0,
-                'w': 0
-                };
-
 // Add the event listeners to the movement keys, the mouse cursor moving, and the click
 function setupGame(difficulty){
-	stage=new Stage(document.getElementById('stage'), difficulty);
+	// stage=new Stage(document.getElementById('stage'), difficulty);
 
 	// https://javascript.info/keyboard-events
 	document.addEventListener('keydown', moveByKey);
@@ -208,7 +198,6 @@ function login(){
 
                 document.getElementById("usernameRegister").value = credentials.username;
                 hideErrors();
-                prepareGame();
 
         }).fail(function(err){
                 console.log("fail "+err.status+" "+JSON.stringify(err.responseJSON));
@@ -259,7 +248,6 @@ function register(){
                 console.log(jqXHR.status+" "+text_status+JSON.stringify(data));
 
                 hideErrors();
-                prepareGame();
 
         }).fail(function(err){
                 console.log("fail "+err.status+" "+JSON.stringify(err.responseJSON));
@@ -383,188 +371,11 @@ $(function(){
         $("#editProfile").on('click', function(){ updateProfile(); });
         $("#deleteProfile").on('click', function(){ deleteProfile(); });
 
-
-        $("#leaderboardNav").on('click',function(){ leaderboardScreen(); });
-        $("#gameNav").on('click',function(){ gameScreen(); });
-        $("#retreatButton").on('click',function(){ endGame(); });
         $("#profileNav").on('click',function(){ profileScreen(); });
         $("#logoutNav").on('click',function(){ loginScreen(); });
         
         loginScreen();
 });
-
-// End the game and double the score (this comes from pressing the "Retreat" button)
-function endGame(){
-        stage.setScore(stage.score + stage.score);
-        stage.isGameOver = true;
-        stage.isPaused = true;
-}
-
-// Show the leaderboard
-function showLeaderboard(){
-        $("#ui_leaderboard").show();
-
-        // Ajax
-        $.ajax({
-                method: "GET",
-                url: "/api/leaderboard",
-                data: {},
-		// headers: { "Authorization": "Basic " + btoa(credentials.username + ":" + credentials.password) },
-                dataType:"json"
-        }).done(function(data, text_status, jqXHR){
-                console.log(jqXHR.status+" "+text_status+JSON.stringify(data));
-                // populate HTML leaderboard table
-                populateLeaderboards(data);
-
-        }).fail(function(err){
-                console.log("fail "+err.status+" "+JSON.stringify(err.responseJSON));
-        });
-}
-
-function populateLeaderboards(data){
-        // split data
-        var easy=[];
-        var normal=[];
-        var hard=[];
-        for(var i=0; i<data.length; i++){
-                if(data[i].difficulty=='easy')easy.push(data[i]);
-                else if(data[i].difficulty=='normal')normal.push(data[i]);
-                else if(data[i].difficulty=='hard')hard.push(data[i]);
-        }
-
-        // populate HTML fields
-        if(easy.length>0){
-                for(var i=0; i<easy.length; i++){
-                        document.getElementById("euser"+i).innerText=easy[i].username;
-                        document.getElementById("escore"+i).innerText=easy[i].score;
-                        document.getElementById("ediff"+i).innerText=easy[i].difficulty;
-                        document.getElementById("edate"+i).innerText=easy[i].dateplayed;
-                }
-        }
-        if(normal.length>0){
-                for(var i=0; i<normal.length; i++){
-                        document.getElementById("nuser"+i).innerText=normal[i].username;
-                        document.getElementById("nscore"+i).innerText=normal[i].score;
-                        document.getElementById("ndiff"+i).innerText=normal[i].difficulty;
-                        document.getElementById("ndate"+i).innerText=normal[i].dateplayed;
-                }
-        }
-        if(hard.length>0){
-                for(var i=0; i<hard.length; i++){
-                        document.getElementById("huser"+i).innerText=hard[i].username;
-                        document.getElementById("hscore"+i).innerText=hard[i].score;
-                        document.getElementById("hdiff"+i).innerText=hard[i].difficulty;
-                        document.getElementById("hdate"+i).innerText=hard[i].dateplayed;
-                }
-        }
-}
-
-// Store a game score into the table
-function storeGame(){
-        $.ajax({
-                method: "POST",
-                url: "/api/auth/game",
-                data: JSON.stringify({ "username":credentials.username, "score":stage.score, "difficulty":stage.difficulty }),
-		headers: { "Authorization": "Basic " + btoa(credentials.username + ":" + credentials.password) },
-                processData: false, 
-		contentType: "application/json; charset=utf-8",
-		dataType :"json"
-        }).done(function(data, text_status, jqXHR){
-                console.log(jqXHR.status+" "+text_status+JSON.stringify(data));
-        }).fail(function(err){
-                console.log("fail "+err.status+" "+JSON.stringify(err.responseJSON));
-        });
-}
-
-// Prepares the event listeners for selecting difficulty
-function prepareGame(){
-        difficulty_button_easy = document.getElementById('difficulty_easy');
-        difficulty_button_easy.addEventListener('click', difficulty_selection_easy);
-
-        difficulty_button_mid = document.getElementById('difficulty_mid');
-        difficulty_button_mid.addEventListener('click', difficulty_selection_mid);
-
-        difficulty_button_hard = document.getElementById('difficulty_hard');
-        difficulty_button_hard.addEventListener('click', difficulty_selection_hard);
-
-        difficultyScreen();
-}
-
-// Start the game with different difficulties
-
-function difficulty_selected(){
-        setupGame(difficulty);
-        startGame();
-        gameScreen();
-}
-
-function difficulty_selection_easy(){
-        difficulty = 0;
-        difficulty_selected();
-}
-
-function difficulty_selection_mid(){
-        difficulty = 1;
-        difficulty_selected();
-}
-
-function difficulty_selection_hard(){
-        difficulty = 2;
-        difficulty_selected();
-}
-
-// Check if the game is over. If it is, restart the game.
-function checkForGameOver(){
-        if (stage && stage.isGameOver){
-                restartGame();
-        }
-}
-
-function restartGame(){
-        // add previous game stats to db
-        storeGame();
-
-        // Make a new game
-        stage = null;
-        clearInterval(interval);
-        prepareGame();
-}
-
-// The following methods are in charge of displaying, hiding, and populating different html tags
-
-function showDifficulty(){
-        $("#difficulty_selection").show();
-        $("#difficulty_easy").show();
-        $("#difficulty_mid").show();
-        $("#difficulty_hard").show();
-}
-
-function hideDifficulty(){
-        $("#difficulty_selection").hide();
-        $("#difficulty_easy").hide();
-        $("#difficulty_mid").hide();
-        $("#difficulty_hard").hide();
-}
-
-function showGame(){
-        if (!stage){
-                prepareGame();
-        } else {
-                if (!stage.isGameOver){
-                        stage.isPaused = false;
-                }
-                $("#ui_play").show();
-                $("#ui_navbar").show();
-        }
-}
-
-function hideGame(){
-        $("#ui_play").hide();
-        if (stage){
-                stage.isPaused = true;
-        }
-        
-}
 
 function showLogin(){$("#ui_login").show();}
 
@@ -618,7 +429,6 @@ function showProfile(){
 function hideProfile(){$("#ui_registration").hide();}
 function showNavigation(){$("#ui_navbar").show();}
 function hideNavigation(){$("#ui_navbar").hide();}
-function hideLeaderboard(){$("#ui_leaderboard").hide();}
 
 function showErrors(response){
         document.getElementById("ui_errors").innerText = response;
@@ -633,12 +443,9 @@ function hideErrors(){
 // The following methods display the different screens the user will interact with
 
 function registrationScreen(){
-        hideLeaderboard();
         hideErrors();
         hideLogin();
         hideNavigation();
-        hideDifficulty();
-        hideGame();
         showRegister();
 }
 
@@ -648,46 +455,13 @@ function loginScreen(){
         hideErrors();
 
         showLogin();
-        showLeaderboard();
-        hideNavigation();
-        hideDifficulty();
+        // hideNavigation();
         hideRegister();
-        hideGame();
-}
-
-function gameScreen(){
-        hideLeaderboard();
-        hideLogin();
-        showNavigation();
-        hideDifficulty();
-        hideRegister();
-        showGame();
-}
-
-function difficultyScreen(){
-        hideLeaderboard();
-        hideLogin();
-        showNavigation();
-        showDifficulty();
-        hideRegister();
-        hideGame();
-}
-
-function leaderboardScreen(){
-        hideLogin();
-        showNavigation();
-        showLeaderboard();
-        hideDifficulty();
-        hideRegister();
-        hideGame();
 }
 
 function profileScreen(){
         hideLogin();
         showNavigation();
-        hideLeaderboard();
-        hideDifficulty();
         hideRegister();
-        hideGame();
         showProfile();
 }

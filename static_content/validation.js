@@ -1,4 +1,4 @@
-export default function validateLogin(username, password){
+function validateLogin(username, password){
 	var errors="";
 
 	// username: letters,numbers, _
@@ -16,7 +16,7 @@ export default function validateLogin(username, password){
 	return errors;
 }
 
-export default function validateProfile(username, password, confirmPassword, email, firstName, lastName, birthday, pizza, soda){
+function validateProfile(username, password, confirmPassword, email, firstName, lastName, birthday, pizza, soda){
 	// username and password
 	var errors=validateLogin(username, password);
 
@@ -62,3 +62,5 @@ export default function validateProfile(username, password, confirmPassword, ema
 	}
 	return errors;
 }
+
+module.exports = {validateProfile, validateLogin};
