@@ -1,3 +1,42 @@
+var covidData;
+var features;
+
+function getCovidData() {
+    var settings = {
+        "url": "https://corona.lmao.ninja/v2/countries?yesterday&sort",
+        "method": "GET",
+        "timeout": 0,
+    };
+
+    $.ajax(settings).done(function (response) {
+        covidData = response;
+        console.log(covidData);
+    }).catch(err => console.log(err));
+}
+
+function applyCovidData(features, covidData) {
+    for (let i = 0; i < features.length; i++) {
+        const country = features[i];
+        const covidCountry = covidData.find(
+            (covidCountry) => country.properties.ISO_A3 === covidCountry.countryInfo.iso3
+        );
+
+        // initialize new properties
+        country.properties.cases = 0;
+        country.properties.todayCases = 0;
+        country.properties.todayDeaths = 0;
+        country.properties.casesPerOneMillion = 0;
+
+        // add relevant data to feature properties
+        if (covidCountry != null) {
+            country.properties.cases = covidCountry.cases;
+            country.properties.todayCases = covidCountry.todayCases;
+            country.properties.todayDeaths = covidCountry.todayDeaths;
+            country.properties.casesPerOneMillion = covidCountry.casesPerOneMillion;
+        }
+    }
+}
+
 function getCountries() {
         $.ajax({
                 method: "GET",
@@ -7,7 +46,11 @@ function getCountries() {
 
                 // add to map
                 const features = data.features;
-                const countries = L.geoJson(features);
+                applyCovidData(features, covidData);
+
+                console.log(features);
+
+                const countries = L.geoJson(features, { style: style });
                 countries.addTo(mymap);
                 
         }).fail(function(err){
@@ -15,6 +58,7 @@ function getCountries() {
         });
 }
 
+getCovidData();
 
 // Making a map and tiles
 // Setting a higher initial zoom to make effect more obvious
@@ -28,40 +72,20 @@ tiles.addTo(mymap);
 
 getCountries();
 
-// Making a marker with a custom icon
-//   const issIcon = L.icon({
-//     iconUrl: 'iss200.png',
-//     iconSize: [50, 32],
-//     iconAnchor: [25, 16]
-//   });
-let marker = L.marker([0, 0]).addTo(mymap);
-
-// mymap.on('zoomend', function() {
-//     const zoom = mymap.getZoom() + 1;
-//     const w = 50 * zoom;
-//     const h = 32 * zoom;
-//     issIcon.options.iconSize = [w, h];
-//     issIcon.options.iconAnchor = [w / 2, h / 2];
-//     mymap.removeLayer(marker);
-//     let latlng = marker.getLatLng();
-//     marker = L.marker([0, 0], { icon: issIcon }).addTo(mymap);
-//     marker.setLatLng(latlng);
-// });
-
-const api_url = 'https://api.wheretheiss.at/v1/satellites/25544';
+// old dataset
 const cases_api_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/web-data/data/cases_country.csv'; 
 
 let firstTime = true;
 
 // ============================================
 function getColor(cases) {
-    return d > 5000000 ? '#800026' :
-           d > 1000000  ? '#BD0026' :
-           d > 500000  ? '#E31A1C' :
-           d > 200000  ? '#FC4E2A' :
-           d > 100000   ? '#FD8D3C' :
-           d > 50000   ? '#FEB24C' :
-           d > 10000   ? '#FED976' :
+    return cases > 5000000 ? '#800026' :
+           cases > 1000000  ? '#BD0026' :
+           cases > 500000  ? '#E31A1C' :
+           cases > 200000  ? '#FC4E2A' :
+           cases > 100000   ? '#FD8D3C' :
+           cases > 50000   ? '#FEB24C' :
+           cases > 10000   ? '#FED976' :
                       '#FFEDA0';
 }
 
@@ -72,7 +96,7 @@ function style(feature) {
 			color: 'white',
 			dashArray: '3',
 			fillOpacity: 0.7,
-			fillColor: getColor(feature.properties.density)
+			fillColor: getColor(feature.properties.cases)
 		};
 	}
 
